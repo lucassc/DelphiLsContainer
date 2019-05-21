@@ -7,34 +7,74 @@ uses
 
 type
   TLSRttyUtils = class
-  private
-    class function getCreate(pClass: TClass): TRttiMethod;
   public
-    class function CreateInstance<T: Constructor>: T; Overload;
-    class function CreateInstance(pClass: TClass): TObject; Overload;
-    class function CreateInstance<T: Constructor>(pParams: TArray<TValue>): T; Overload;
-    class function CreateInstance(pClass: TClass; pParams: TArray<TValue>): TObject; Overload;
+    class function CreateInstance(pClass: TClass; pParams: TArray<TValue>): TValue;
+    class function IsFactory(pClass: TClass): boolean;
+    class function GetInstanceFromFactory(pClass: TClass; pParams: TArray<TValue>): TValue;
+
+    class function IsAutoInjectMethod(pMethod: TRttiMethod): boolean;
   end;
 
 implementation
 
 
+uses
+  uLS.Rtti.Attributes;
+
 { TLSRttyUtils }
 
-class function TLSRttyUtils.CreateInstance<T>(pParams: TArray<TValue>): T;
+class function TLSRttyUtils.GetInstanceFromFactory(pClass: TClass; pParams: TArray<TValue>): TValue;
 var
-  lClass: TClass;
-  lCreate: TRttiMethod;
+  lFactory: TObject;
+  lGetInstance: TRttiMethod;
+  lRttiContext: TRttiContext;
+  lRttiType: TRttiType;
 begin
-  lClass := TypeInfo(T);
+  lFactory := Self.CreateInstance(pClass, pParams).AsType<TObject>;
+  try
+    lRttiContext := TRttiContext.Create;
+    lRttiType := lRttiContext.GetType(pClass);
+    lGetInstance := lRttiType.AsInstance.getMethod('GetInstance');
 
-  lCreate := Self.getCreate(lClass);
-  Result := lCreate.Invoke(lClass, pParams).AsType<T>;
-
+    Result := lGetInstance.Invoke(lFactory, []);
+  finally
+    lFactory.Free;
+  end;
 end;
 
-class function TLSRttyUtils.getCreate(pClass: TClass): TRttiMethod;
+class function TLSRttyUtils.IsAutoInjectMethod(pMethod: TRttiMethod): boolean;
 var
+  lAttributes: TArray<TCustomAttribute>;
+  lAttribute: TCustomAttribute;
+begin
+  Result := false;
+  lAttributes := pMethod.GetAttributes;
+
+  for lAttribute in lAttributes do
+    if lAttribute is TLSInjectable then
+      exit(true);
+end;
+
+class function TLSRttyUtils.IsFactory(pClass: TClass): boolean;
+var
+  lAttributes: TArray<TCustomAttribute>;
+  lAttribute: TCustomAttribute;
+  lRttiContext: TRttiContext;
+  lRttiType: TRttiType;
+begin
+  lRttiContext := TRttiContext.Create;
+  lRttiType := lRttiContext.GetType(pClass);
+
+  lAttributes := lRttiType.GetAttributes;
+  Result := false;
+  for lAttribute in lAttributes do
+    if lAttribute is TLSFactory then
+      exit(true);
+end;
+
+class function TLSRttyUtils.CreateInstance(pClass: TClass; pParams: TArray<TValue>): TValue;
+var
+  lCreate: TRttiMethod;
   lRttiContext: TRttiContext;
   lRttiType: TRttiType;
 begin
@@ -42,26 +82,9 @@ begin
 
   lRttiType := lRttiContext.GetType(pClass);
 
-  Result := lRttiType.AsInstance.GetMethod('Create');
-end;
+  lCreate := lRttiType.AsInstance.getMethod('Create');
 
-class function TLSRttyUtils.CreateInstance<T>: T;
-begin
-  Result := Self.CreateInstance<T>([]);
-end;
-
-class function TLSRttyUtils.CreateInstance(pClass: TClass): TObject;
-begin
-  Result := Self.CreateInstance(pClass, []);
-end;
-
-class function TLSRttyUtils.CreateInstance(pClass: TClass; pParams: TArray<TValue>): TObject;
-var
-  lCreate: TRttiMethod;
-begin
-  lCreate := Self.getCreate(pClass);
-  Result := lCreate.Invoke(pClass, pParams).AsType<TObject>;
-
+  Result := lCreate.Invoke(pClass, pParams);
 end;
 
 end.
