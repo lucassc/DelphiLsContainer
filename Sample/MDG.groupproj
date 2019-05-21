@@ -1,0 +1,48 @@
+﻿<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+    <PropertyGroup>
+        <ProjectGuid>{877C6708-5858-4A3C-AAEF-F9F0E75ECD4D}</ProjectGuid>
+    </PropertyGroup>
+    <ItemGroup>
+        <Projects Include="src\MeetupDelphi.dproj">
+            <Dependencies/>
+        </Projects>
+        <Projects Include="Test\MeetupDelphiTests.dproj">
+            <Dependencies/>
+        </Projects>
+    </ItemGroup>
+    <ProjectExtensions>
+        <Borland.Personality>Default.Personality.12</Borland.Personality>
+        <Borland.ProjectType/>
+        <BorlandProject>
+            <Default.Personality/>
+        </BorlandProject>
+    </ProjectExtensions>
+    <Target Name="MeetupDelphi">
+        <MSBuild Projects="src\MeetupDelphi.dproj"/>
+    </Target>
+    <Target Name="MeetupDelphi:Clean">
+        <MSBuild Projects="src\MeetupDelphi.dproj" Targets="Clean"/>
+    </Target>
+    <Target Name="MeetupDelphi:Make">
+        <MSBuild Projects="src\MeetupDelphi.dproj" Targets="Make"/>
+    </Target>
+    <Target Name="MeetupDelphiTests">
+        <MSBuild Projects="Test\MeetupDelphiTests.dproj"/>
+    </Target>
+    <Target Name="MeetupDelphiTests:Clean">
+        <MSBuild Projects="Test\MeetupDelphiTests.dproj" Targets="Clean"/>
+    </Target>
+    <Target Name="MeetupDelphiTests:Make">
+        <MSBuild Projects="Test\MeetupDelphiTests.dproj" Targets="Make"/>
+    </Target>
+    <Target Name="Build">
+        <CallTarget Targets="MeetupDelphi;MeetupDelphiTests"/>
+    </Target>
+    <Target Name="Clean">
+        <CallTarget Targets="MeetupDelphi:Clean;MeetupDelphiTests:Clean"/>
+    </Target>
+    <Target Name="Make">
+        <CallTarget Targets="MeetupDelphi:Make;MeetupDelphiTests:Make"/>
+    </Target>
+    <Import Project="$(BDS)\Bin\CodeGear.Group.Targets" Condition="Exists('$(BDS)\Bin\CodeGear.Group.Targets')"/>
+</Project>
